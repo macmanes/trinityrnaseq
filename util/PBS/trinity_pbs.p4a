@@ -1,0 +1,39 @@
+##################################################################################################################################
+##########################                                                                ########################################
+##########################     Trinity PBS job submission with multi part dependencies    ########################################
+##########################                                                                ########################################
+##################################################################################################################################
+### Author: Josh Bowden, CSIRO
+### Version 0.1
+### QuantifyGraph p4a Script
+##################################################################################################################################
+
+
+
+FILENAME=""$OUTPUTDIR"/chrysalis/quantifyGraph_commands"
+FILENAMEBFLY=""$OUTPUTDIR"/chrysalis/butterfly_commands.adj"
+# This is the number of lines from the full file to execute within a single instance of an array job
+
+
+JOBSTRING4=""$HASHBANG"
+"$NODESCPUS"
+ cd "$OUTPUTDIR"
+ 
+ #Check if butterfly has been started - if so then do not run Chrysalis::QuantifyGraph again
+ if [ -e \""$FILENAMEBFLY"_0.start\" ] ; then
+  	exit 0
+ fi
+
+ #Obtain the total number of commands in the file and then create a pbs array job to execute each one
+ NUMCMDS1=\`wc \""$FILENAME"\" | awk '{print \$1}'\`
+ NUMCMDS2=\$(( \$NUMCMDS1 / "$NUMPERARRAYITEM_P4" ))
+
+ # a variable is passed to the qsub command (using: -v NUMCMD=\$NUMCMD1) that invokes the array job specifying the total number of jobs.
+ # so we don't have to read the file (that contains the full number of jobs) again to read the number of lines
+ PBS_JOB4=\`qsub "$JOBARRAY" 0-"\$NUMCMDS2""$SLOTLIMIT" -v NUMCMD=\"\$NUMCMDS1\" "$JOBPREFIX"_p4b.sh\`
+ echo "\$PBS_JOB4" > arrayjobname_$JOBPREFIX.txt
+ echo \"\$PBS_JOB4\" >> jobnumbers.out ;"
+
+		# Write the above script to a file for later execution
+		echo "${JOBSTRING4}" | cat -> ""$JOBNAME4".sh"
+	

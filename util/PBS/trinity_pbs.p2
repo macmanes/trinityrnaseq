@@ -1,0 +1,24 @@
+##################################################################################################################################
+##########################                                                                ########################################
+##########################     Trinity PBS job submission with multi part dependencies    ########################################
+##########################                                                                ########################################
+##################################################################################################################################
+### Author: Josh Bowden, CSIRO
+### Version 0.1
+### Chrysalis P2 script
+##################################################################################################################################
+
+JOBSTRING2=""$HASHBANG"
+"$NODESCPUS"
+ cd "$OUTPUTDIR"
+ # set stack size to unlimited for Chrysalis (part 1)
+ ulimit -s unlimited
+ export OMP_NUM_THREADS="$NCPU_P2"
+ export KMP_AFFINITY=scatter
+ # this runs Chrysalis::GraphFromFasta
+ "$STANDARD_JOB_DETAILS"  --CPU "$NCPU_P2" --no_run_quantifygraph"
+		
+	# Write the JOBSTRING2 to a file for later execution
+	echo "${JOBSTRING2}" | cat -> ""$JOBNAME2".sh"
+
+	

@@ -1,0 +1,48 @@
+##################################################################################################################################
+##########################                                                                ########################################
+##########################     Trinity PBS job submission with multi part dependencies    ########################################
+##########################                                                                ########################################
+##################################################################################################################################
+### Author: Josh Bowden, CSIRO
+### Version 0.1
+### Butterfly p5a Script
+##################################################################################################################################
+
+
+
+# FILENAMEBFLY is defined in part 4a as we check to see if butterfly commands have started as it indicates 4b is finished.
+FILENAME="$FILENAMEBFLY"
+# This obtains the number of lines in the file
+
+
+
+JOBSTRING5=""$HASHBANG"
+"$NODESCPUS"
+
+ cd "$OUTPUTDIR"
+ #Obtain the number of commands in the file and then create a pbs array job to execute each one
+ NUMCMDS1=\`wc \""$FILENAME"\" | awk '{print \$1}'\`
+ NUMCMDS2=\$(( \$NUMCMDS1 / "$NUMPERARRAYITEM_P5" ))
+ 
+ #if Chrysalis::QuantifyGraph is being run then set up a dependency on it
+ if [ ! -e \""$FILENAMEBFLY"_0.start\" ] ; then
+  	BFLY_DEPENDS=\`cat arrayjobname_$JOBPREFIX.txt\`
+	BFLY_OKSTRING=\" -W depend="$AFTEROKARRAY":\${BFLY_DEPENDS%%.*} \" 
+ else
+	BFLY_OKSTRING=\" \"
+ fi
+
+
+ # Butterfly jobs require the previous Chrysalis::QuantifyGraph commands to be completed, get the name of the QuantifyGraph PBS job (part 4b) so we can set up a job dependency
+ 
+ # a variable is passed to the qsub command (using: -v NUMCMD=\$NUMCMD1) that invokes the array job specifying the total number of jobs.
+ # so we don't have to read the file (that contains the full number of jobs) again to read the number of lines
+ PBS_JOB5=\`qsub "$JOBARRAY" 0-\"\$NUMCMDS2\""$SLOTLIMIT" -v NUMCMD=\$NUMCMDS1  \$BFLY_OKSTRING "$JOBPREFIX"_p5b.sh\`
+ PBS_JOB6=\`qsub -W depend="$AFTEROKARRAY":\${PBS_JOB5%%.*} "$JOBNAME6".sh\`
+
+ echo \"\$PBS_JOB5\" >> jobnumbers.out ;
+ echo \"\$PBS_JOB6\" >> jobnumbers.out ;
+"
+
+		# Write the above script to a file for later execution
+		echo "${JOBSTRING5}" | cat -> ""$JOBNAME5".sh"

@@ -1,0 +1,73 @@
+############################################################################################################################################################
+###########  The main control script, that we will run and can be run seperately later if the job fails at intermediate stages  ###################
+RUNVAR1=""$HASHBANG"
+###########################################################################################################################################################
+################         Use the Trinity/Chrysalis checkpoint files to work out what part of job remains          #########################################
+################         and queue only those parts that are still required		                                  #########################################
+if [ ! -e \""$OUTPUTDIR"/inchworm.K25.L25"$DS"fa.finished\" ] ;
+then # do the whole analysis 
+	PBS_JOB1=\`qsub  "$JOBNAME1".sh\`
+	PBS_JOB2=\`qsub -W depend=afterok:\$PBS_JOB1  "$JOBNAME2".sh\`
+	PBS_JOB3=\`qsub -W depend=afterany:\$PBS_JOB2 "$JOBNAME3".sh\`
+	PBS_JOB4=\`qsub -W depend=afterok:\$PBS_JOB3  "$JOBNAME4".sh\`
+	PBS_JOB5=\`qsub -W depend=afterok:\$PBS_JOB4  "$JOBNAME5".sh\`
+	
+	echo  "$JOBNAME1".sh submitted ; echo \"\$PBS_JOB1\" > jobnumbers.out ;
+	echo  "$JOBNAME2".sh submitted ; echo \"\$PBS_JOB2\" >> jobnumbers.out ;
+	echo  "$JOBNAME3".sh submitted ; echo \"\$PBS_JOB3\" >> jobnumbers.out ;
+	echo  "$JOBNAME4".sh submitted ; echo \"\$PBS_JOB4\" >> jobnumbers.out ;
+	echo  "$JOBNAME5".sh submitted ; echo \"\$PBS_JOB5\" >> jobnumbers.out ;
+else # do analysis after inchworm only
+	if [ ! -e \""$OUTPUTDIR"/chrysalis/GraphFromIwormFasta.finished\" ] ; # iworm_scaffolds.txt.finished
+	then # start analysis after inchworm 
+		PBS_JOB2=\`qsub  "$JOBNAME2".sh\`
+		PBS_JOB3=\`qsub -W depend=afterany:\$PBS_JOB2 "$JOBNAME3".sh\`
+		PBS_JOB4=\`qsub -W depend=afterok:\$PBS_JOB3  "$JOBNAME4".sh\`
+		PBS_JOB5=\`qsub -W depend=afterok:\$PBS_JOB4  "$JOBNAME5".sh\`
+		echo  "$JOBNAME2".sh submitted ; echo \"\$PBS_JOB2\" >  jobnumbers.out ;
+		echo  "$JOBNAME3".sh submitted ; echo \"\$PBS_JOB3\" >> jobnumbers.out ;
+		echo  "$JOBNAME4".sh submitted ; echo \"\$PBS_JOB4\" >> jobnumbers.out ;
+		echo  "$JOBNAME5".sh submitted ; echo \"\$PBS_JOB5\" >> jobnumbers.out ;
+	else 
+		if [ ! -e \""$OUTPUTDIR"/chrysalis/readsToTranscripts.finished\" ] ;
+		then # start analysis at Chrisyalis ReadsToTranscripts - which is slow due to I/O 
+			PBS_JOB3=\`qsub  "$JOBNAME3".sh\`
+			PBS_JOB4=\`qsub -W depend=afterok:\$PBS_JOB3  "$JOBNAME4".sh\`
+			PBS_JOB5=\`qsub -W depend=afterok:\$PBS_JOB4  "$JOBNAME5".sh\`
+			echo  "$JOBNAME3".sh submitted ; echo \"\$PBS_JOB3\" >  jobnumbers.out ;
+			echo  "$JOBNAME4".sh submitted ; echo \"\$PBS_JOB4\" >> jobnumbers.out ;
+			echo  "$JOBNAME5".sh submitted ; echo \"\$PBS_JOB5\" >> jobnumbers.out ;
+		else 
+			if [ ! -e \""$FILENAMEBFLY"_0.start\" ] ;
+			then # Run Chrysalis QuantifyGraph and then Butterfly as PBS array jobs
+				PBS_JOB4=\`qsub "$JOBNAME4".sh\`
+				PBS_JOB5=\`qsub -W depend=afterok:\$PBS_JOB4  "$JOBNAME5".sh\`
+				echo  "$JOBNAME4".sh submitted ; echo \"\$PBS_JOB4\"  > jobnumbers.out ;
+				echo  "$JOBNAME5".sh submitted ; echo \"\$PBS_JOB5\" >> jobnumbers.out ;
+			else #Chrysalis::QuantifyGraph has finished so only run Butterfly commands as an array job
+				if [ ! -e \""$OUTPUTDIR"/Trinity.fasta\" ] ;
+				then # Run Chrysalis QuantifyGraph and then Butterfly as PBS array jobs
+					PBS_JOB5=\`qsub "$JOBNAME5".sh\`
+					echo  "$JOBNAME5".sh submitted ; echo \"\$PBS_JOB5\" > jobnumbers.out ;
+				else
+					echo 'Job seemingly finished: Trinity.fasta present in output directory'
+				fi
+			fi
+		fi	
+	fi		
+fi" 	
+
+echo "${RUNVAR1}" | cat -> ""$JOBPREFIX"_run.sh"
+echo ""
+echo "To restart these jobs run either the same command again:"
+echo "		trinity_pbs.sh <config.file>"
+echo "	or the following script: "
+echo "		"$JOBPREFIX"_run.sh  found in the output directory"
+echo ""
+chmod 744 ""$JOBPREFIX"_run.sh"
+echo "To stop these jobs run:"
+echo "		trinity_pbs.sh --rm "$OUTPUTDIR"/"
+echo ""
+echo "To check progress of these jobs run:"
+echo "		qstat -u username"
+echo ""

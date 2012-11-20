@@ -1,0 +1,23 @@
+Statistics:
+===========
+Trinity Version:      BLEEDING_EDGE
+Compiler:             GCC
+Trinity Parameters:   --seqType fq --JM 2G --left reads.left.fq.gz --right reads.right.fq.gz --SS_lib_type RF --CPU 4 --no_cleanup
+Paired mode
+ Input data
+  Left.fasta    1 MByte
+  Right.fasta   1 MByte
+  Number of unique KMERs: 520108
+  Number of reads:        61150
+ Output data
+  Trinity.fasta 0 MByte
+
+Runtime
+=======
+Start:       Thu Nov  1 09:22:13 PDT 2012
+End:         Thu Nov  1 09:23:00 PDT 2012
+Trinity.pl   47 seconds
+  Inchworm   8 seconds
+  Chrysalis  10 seconds
+  Butterfly  28 seconds
+  Rest       1 seconds

@@ -1,0 +1,20 @@
+##################################################################################################################################
+##########################                                                                ########################################
+##########################     Trinity PBS job submission with multi part dependencies    ########################################
+##########################                                                                ########################################
+##################################################################################################################################
+### Author: Josh Bowden, CSIRO
+### Version 0.1
+### Inchworm P1 script
+##################################################################################################################################
+
+JOBSTRING1=""$HASHBANG"
+"$NODESCPUS"
+ cd "$OUTPUTDIR"
+ export OMP_NUM_THREADS="$NCPU_P1"
+ export KMP_AFFINITY=compact
+ # this runs Inchworm only
+ "$STANDARD_JOB_DETAILS"  --CPU "$NCPU_P1" --no_run_chrysalis"
+		
+	# Write the JOBSTRING1 to a file for later execution
+	echo "${JOBSTRING1}" | cat -> ""$JOBNAME1".sh"

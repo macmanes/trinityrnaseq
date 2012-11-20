@@ -1,0 +1,99 @@
+##################################################################################################################################
+##########################                                                                ########################################
+##########################     Trinity PBS job submission with multi part dependencies    ########################################
+##########################                                                                ########################################
+##################################################################################################################################
+### Author: Josh Bowden, CSIRO
+### Version 0.1
+### Butterfly p5b Script
+##################################################################################################################################
+
+
+LOCALFILE=""$MEMDIRIN"/butterfly_commands.adj"
+
+JOBSTRING5b=""$HASHBANG"
+"$NODESCPUS"
+
+ cd "$OUTPUTDIR"
+ export OMP_NUM_THREADS=1
+
+ # exit if the local directory is not present
+ if [ ! -d "$MEMDIRIN" ] ; then
+	echo \"Error: directory does not exist\"
+	echo "$MEMDIRIN"
+	echo \"Referenced as MEMDIRIN variable in trinity_pbs.sh\"
+  	exit 1
+ fi
+
+  #Checkpoint that butterfly has been started - so we do not run Chrysalis::QuantifyGraph again
+ if [ "$JOBARRAY_ID" == 0 ] ; then
+  	touch \""$FILENAMEBFLY"_0.start\" 
+ fi
+
+ #do not do anything if the .fin file is presny as all jobs completed
+ if [ -e \""$FILENAME"_"$JOBARRAY_ID".fin\" ] ; then
+  	exit 0
+ fi
+
+ # Obtain the lines from the file and execute the commands in it. NUMCMD is a variable set on the calling qsub command line (by trinity_pbs.5a) 
+ START=\$(( "$JOBARRAY_ID" * "$NUMPERARRAYITEM_P5" + 1 )) 
+ FINISH=\$(( \$START + "$NUMPERARRAYITEM_P5" - 1 )) 
+ if [ \$FINISH -gt \$NUMCMD ] ; then 
+	FINISH=\$NUMCMD 
+ fi
+ 
+ if [ -e \""$FILENAME"_"$JOBARRAY_ID".new\" ] ; then 
+ # Walltime possibly ran out last time through. Copy the .new file that is hopefully complete to the original subset version name 
+	 mv \""$FILENAME"_"$JOBARRAY_ID".new\" \""$FILENAME"_"$JOBARRAY_ID"\"
+ fi
+
+ # if the output (subset of commands) file does not allready exist
+ if [ ! -e \""$FILENAME"_"$JOBARRAY_ID"\" ] ; then 
+	 # Write a file with a subset of commands 
+	 for CMD_NUM in \`seq \$START \$FINISH\`; do 
+		 awk \"NR==\$CMD_NUM\" \""$FILENAME"\" >> \""$FILENAME"_"$JOBARRAY_ID"\"
+	 done  
+ fi
+
+
+ # check that the local directory exists
+ if [ ! -d "$MEMDIRIN" ] ; then
+	echo \"Not a diretory: "$MEMDIRIN"\"
+ fi 
+ # the file has to exist now so now move it to the local filesystem
+ mv \""$FILENAME"_"$JOBARRAY_ID"\" "$LOCALFILE"_"$JOBARRAY_ID"
+
+
+ RETURNVAL=0
+ # If we run out of walltime, this should move our partially finished list of commands back to the shared filesystem
+trap \"  echo \\\"Please check butterfly process had enough walltime.\\\" ; mv "$LOCALFILE"_"$JOBARRAY_ID" \""$FILENAME"_"$JOBARRAY_ID"\" || mv "$LOCALFILE"_"$JOBARRAY_ID".new \""$FILENAME"_"$JOBARRAY_ID".new\"; exit \" TERM INT
+
+ # Execute the commands in the new file and delete them if executed without error
+ FINISH=\`wc \""$LOCALFILE"_"$JOBARRAY_ID"\" | awk '{print \$1}'\`
+ for CMD_NUM in \`seq 1 \$FINISH\`; do 
+	CMDLINE=\`awk \"NR==\$CMD_NUM\" "$LOCALFILE"_"$JOBARRAY_ID"\`
+	\$CMDLINE 
+	RES=\$? 
+	 if [ \$RES -ne 0 ] ; then
+ 		echo \"FALILED: LINE \$CMD_NUM : \"\$CMDLINE"" 
+		RETURNVAL=\$RES 
+	else # blank out line
+		sed \"\$CMD_NUM c \\ \" "$LOCALFILE"_"$JOBARRAY_ID" > "$LOCALFILE"_"$JOBARRAY_ID".new && mv "$LOCALFILE"_"$JOBARRAY_ID".new  "$LOCALFILE"_"$JOBARRAY_ID"
+	 fi 
+ done
+
+ trap - INT TERM EXIT
+
+ # Any remaining commands need to run again. Possibly with more memory or longer time for execution.
+ if [ \$RETURNVAL == 0 ] ; then
+  touch \""$FILENAME"_"$JOBARRAY_ID".fin\"
+ else
+  mv "$LOCALFILE"_"$JOBARRAY_ID" \""$FILENAME"_"$JOBARRAY_ID"\" 
+ fi
+
+ exit \$RETURNVAL
+"
+
+		# Write the above script to a file for later execution
+		echo "${JOBSTRING5b}" | cat -> "$JOBPREFIX"_p5b.sh
+
