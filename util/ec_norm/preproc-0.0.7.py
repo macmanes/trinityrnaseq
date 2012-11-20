@@ -10,6 +10,7 @@
 #ISSUES
 #
 #clean version!
+#1st version on git
 #
 
 import sys
