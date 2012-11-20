@@ -118,7 +118,7 @@ def getOptions():
 ##########################################
 ## alignment procedure
 ##########################################
-BASE_DIR = os.path.join( os.path.dirname(sys.argv[0]), '../' )
+BASE_DIR = os.path.join( os.path.dirname(sys.argv[0]), '../../' )
 def error_corr(options):
         ec = subprocess.Popen(['ErrorCorrectReads.pl', 
 		'MAX_MEMORY_GB=', options.memory, 
@@ -137,34 +137,34 @@ def error_corr(options):
         assert ec.returncode == 0, output[0] + "Error Correction failed\n"
 def fastool1(options):
 	log1 = open("corr.left.fa", "w")
-        fastool1 = subprocess.Popen([BASE_DIR + 'trinityseq/trunk/trinity-plugins/fastool/fastool', 
+        fastool1 = subprocess.Popen([BASE_DIR + 'trinity-plugins/fastool/fastool', 
 	'--append', '/1', 
 	'--to-fasta', options.out + '.paired.A.fastq'], stdout=log1)
         output = fastool1.communicate()
         assert fastool1.returncode == 0, output[0] + "FasTool1 Failed\n"
 def fastool2(options):
 	log2 = open("corr.right.fa", "w")
-        fastool2 = subprocess.Popen([BASE_DIR + 'trinityseq/trunk/trinity-plugins/fastool/fastool', 
+        fastool2 = subprocess.Popen([BASE_DIR + 'trinity-plugins/fastool/fastool', 
 	'--append', '/2', 
 	'--to-fasta', options.out + '.paired.B.fastq'], stdout=log2)
         output = fastool2.communicate()
         assert fastool2.returncode == 0, output[0] + "FasTool2 Failed\n"
 def fastool3(options):
 	log3 = open("corr.unpaired.fa", "w")
-        fastool3 = subprocess.Popen([BASE_DIR + 'trinityseq/trunk/trinity-plugins/fastool/fastool', 
+        fastool3 = subprocess.Popen([BASE_DIR + 'trinity-plugins/fastool/fastool', 
 	'--append', '/1', 
 	'--to-fasta', options.out + '.unpaired.fastq'], stdout=log3)
         output = fastool3.communicate()
         assert fastool3.returncode == 0, output[0] + "FasTool3 Failed\n"
 def fastool4(options):
 	log4 = open("corr.single.fa", "w")
-        fastool4 = subprocess.Popen([BASE_DIR + 'trinityseq/trunk/trinity-plugins/fastool/fastool', 
+        fastool4 = subprocess.Popen([BASE_DIR + 'trinity-plugins/fastool/fastool', 
 	'--append', '/1', 
 	'--to-fasta', options.out + '.fastq'], stdout=log4)
         output = fastool4.communicate()
         assert fastool4.returncode == 0, output[0] + "FasTool4 Failed\n"
 def normalize_pairs(options):
-        normalize_pairs = subprocess.Popen([BASE_DIR + 'trinityseq/trunk/util/normalize_by_kmer_coverage.pl', 
+        normalize_pairs = subprocess.Popen([BASE_DIR + 'util/normalize_by_kmer_coverage.pl', 
 	'--seqType', 'fa', 
 	'--max_cov', options.maxcov, 
 	'--left', 'corr.left.fa', 
@@ -174,7 +174,7 @@ def normalize_pairs(options):
         output = normalize_pairs.communicate()
         assert normalize_pairs.returncode == 0, output[0] + "Pair Normalization failed\n"
 def normalize_unpaired(options):
-        normalize_unpaired = subprocess.Popen([BASE_DIR + 'trinityseq/trunk/util/normalize_by_kmer_coverage.pl', 
+        normalize_unpaired = subprocess.Popen([BASE_DIR + 'util/normalize_by_kmer_coverage.pl', 
 	'--seqType', 'fa', 
 	'--max_cov', options.maxcov, 
 	'--single', 'corr.unpaired.fa', 
@@ -183,7 +183,7 @@ def normalize_unpaired(options):
         output = normalize_unpaired.communicate()
         assert normalize_unpaired.returncode == 0, output[0] + "UnPaired Normalization failed\n"
 def normalize_single(options):
-        normalize_single = subprocess.Popen([BASE_DIR + 'trinityseq/trunk/util/normalize_by_kmer_coverage.pl', 
+        normalize_single = subprocess.Popen([BASE_DIR + 'util/normalize_by_kmer_coverage.pl', 
 	'--seqType', 'fa', 
 	'--max_cov', options.maxcov, 
 	'--single', 'corr.single.fa', 
