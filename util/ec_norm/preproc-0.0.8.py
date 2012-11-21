@@ -27,12 +27,12 @@ print ""
 print ""
 print ""
 print "***********************************************************************"
-print "***   preproc.py v0.0.7                                 "
+print "***   preproc.py                                 "
 print "***   To run this program, you must have AllPathsLG (R43869 or newer) "
 print "***   installed and in your $PATH                           "
 print "***********************************************************************"
 print ""
-print "Execution of this script will produce 5 files: corr* files have been Error Corrected but not normalized"
+print "Execution of this script with the '--full True' option selected will produce 5 files: corr* files have been Error Corrected but not normalized"
 print "norm.corr* files have been Error Corrected and normalized. Unpaired reads have been concatenated to the /1 file"
 print "These norm.corr* files are apprproate for assembly using trinity.pl"
 print ""
@@ -114,24 +114,19 @@ def getOptions():
                       help="Attempt to haploidify")
     parser.add_option("--error_correct",
                       dest="dec",
-                      metavar='de',
+                      metavar='dec',
                       default="False",
-                      help="Do you ONLY want to error correct reads?")
-	parser.add_option("--normalize",
-                      dest="norm",
-                      metavar='norm',
-                      default="False",
-                      help="Do you ONLY want to normalize?")                                        
-	parser.add_option("--full",
+                      help="Do you ONLY want to error correct reads?")                                      
+    parser.add_option("--full",
                       dest="full",
                       metavar='full',
-                      default="True",
+                      default="False",
                       help="Do you want to error correct and normalize?")                                        
     (options, args) = parser.parse_args()
     return options
 
 ##########################################
-## alignment procedure
+## Error Correct
 ##########################################
 BASE_DIR = os.path.join( os.path.dirname(sys.argv[0]), '../../' )
 def error_corr(options):
@@ -150,6 +145,9 @@ def error_corr(options):
 		'READS_OUT=', options.out])
         output = ec.communicate()
         assert ec.returncode == 0, output[0] + "Error Correction failed\n"
+##########################################
+## Fastool
+##########################################
 def fastool1(options):
 	log1 = open("corr.left.fa", "w")
         fastool1 = subprocess.Popen([BASE_DIR + 'trinity-plugins/fastool/fastool', 
@@ -178,6 +176,9 @@ def fastool4(options):
 	'--to-fasta', options.out + '.fastq'], stdout=log4)
         output = fastool4.communicate()
         assert fastool4.returncode == 0, output[0] + "FasTool4 Failed\n"
+##########################################
+## Normalize Pairs
+##########################################
 def normalize_pairs(options):
         normalize_pairs = subprocess.Popen([BASE_DIR + 'util/normalize_by_kmer_coverage.pl', 
 	'--seqType', 'fa', 
@@ -188,6 +189,9 @@ def normalize_pairs(options):
 	'--JELLY_CPU', options.threads])
         output = normalize_pairs.communicate()
         assert normalize_pairs.returncode == 0, output[0] + "Pair Normalization failed\n"
+##########################################
+## Normalize UnPaired Reads
+##########################################
 def normalize_unpaired(options):
         normalize_unpaired = subprocess.Popen([BASE_DIR + 'util/normalize_by_kmer_coverage.pl', 
 	'--seqType', 'fa', 
@@ -197,6 +201,9 @@ def normalize_unpaired(options):
 	'--JELLY_CPU', options.threads])
         output = normalize_unpaired.communicate()
         assert normalize_unpaired.returncode == 0, output[0] + "UnPaired Normalization failed\n"
+##########################################
+## Normalize Single Reads
+##########################################
 def normalize_single(options):
         normalize_single = subprocess.Popen([BASE_DIR + 'util/normalize_by_kmer_coverage.pl', 
 	'--seqType', 'fa', 
@@ -206,6 +213,9 @@ def normalize_single(options):
 	'--JELLY_CPU', options.threads])
         output = normalize_single.communicate()
         assert normalize_single.returncode == 0, output[0] + "Single-end Normalization failed\n"
+##########################################
+## Concatenate
+##########################################
 def concatenate(options):
 	destination = open('norm.corr.left.fa','wb')
 	shutil.copyfileobj(open('corr.left.fa','rb'), destination)
@@ -223,94 +233,128 @@ def checkAllPaths():
             print "Make sure that it is properly installed on your $PATH"
             sys.exit(1)
 #########################################
-## Master function
+## Do this if --full True
 ##########################################
 def main():
         options = getOptions()
         checkAllPaths()    
-        
-        
-        
-        
-        
-        print >> sys.stderr,"\nRunning Error Correction Module, If Necessary: [%s] \n" % (right_now())
-	if os.path.exists(options.out + '.paired.B.fastq'):
-		print >> sys.stderr,"\Error Correction apprears to be complete! I'm going straight to the Normalization Steps. \n"
-	else: 
-		error_corr(options)
-	print ""
-	print "*********************************************************************************"	
-	print "*********************************************************************************"
-	print "\nRunning FasTool conversion: [%s] \n" % (right_now())
-	print "*********************************************************************************"
-	print "*********************************************************************************"	
-	print ""
-	if os.path.exists(options.out + '.paired.A.fastq'):
-		fastool1(options)
-		os.remove(options.out + '.paired.A.fastq')
-	else: 
-		print >> sys.stderr,"working.."		
-	if os.path.exists(options.out + '.paired.B.fastq'):
-		fastool2(options)
-		os.remove(options.out + '.paired.B.fastq')
-	else: 
-		print >> sys.stderr,"working.."		
-	if os.path.exists(options.out + '.unpaired.fastq'):
-		fastool3(options)
-		os.remove(options.out + '.unpaired.fastq')
-	else: 
-		print >> sys.stderr,"working.."			
-	if os.path.exists(options.out + '.fastq'):
-		os.remove(options.out + '.fastq')
-	else: 
-		print >> sys.stderr,"working.."			
-	print ""
-	print "*********************************************************************************"	
-	print "*********************************************************************************"
-	print "\nRunning Normalization Steps for Paired Reads: [%s] \n" % (right_now())
-	print "*********************************************************************************"
-	print "*********************************************************************************"	
-	print ""
-	if os.path.exists('corr.left.fa'):
-		normalize_pairs(options)
-		for filename in glob.glob('corr.right.fa.normalized_K25_C*_pctSD*.fa'):
-			os.rename(filename,'norm.corr.right.fa')
-	else: 
-		print >> sys.stderr,"working.."		
-	print ""
-	print "*********************************************************************************"	
-	print "*********************************************************************************"
-	print "\nRunning Normalization Steps for UnPaired Reads: [%s] \n" % (right_now())
-	print "*********************************************************************************"
-	print "*********************************************************************************"	
-	print ""
-	if os.path.exists(options.out + '.unpaired.fa'):
-		normalize_unpaired(options)
-	else: 
-		print >> sys.stderr,"working.."		
-	print ""
-	print "*********************************************************************************"	
-	print "*********************************************************************************"
-	print "\nConcatenate and Clean up: [%s] \n" % (right_now())
-	print "*********************************************************************************"
-	print "*********************************************************************************"	
-	print ""
-	if os.path.exists('corr.unpaired.fa'):
-		concatenate(options)	
-		for filename in glob.glob('corr.left.fa.normalized_K25_C*_pctSD*.fa'):
-			os.remove(filename) # Need to make sure if ok is something other than C40
-	else: 
-		print >> sys.stderr,"should have concat.."	
-		for filename in glob.glob('corr.left.fa.normalized_K25_C*_pctSD*.fa'):
-			os.rename(filename,'norm.corr.left.fa')
-	os.remove(options.out + '.fastq.ids')
-	shutil.rmtree('normalized_reads')
-	print ""
-	print "*********************************************************************************"	
-	print "*********************************************************************************"
-	print "\nDone.. Happy Assembling! [%s] \n" % (right_now())
-	print "*********************************************************************************"
-	print "*********************************************************************************"	
-	print ""
+        if options.full=='True':
+            print >> sys.stderr,"\nRunning Error Correction Module, If Necessary: [%s] \n" % (right_now())
+            if os.path.exists(options.out + '.paired.B.fastq'):
+                    print >> sys.stderr,"\Error Correction apprears to be complete! I'm going straight to the Normalization Steps. \n"
+            else: 
+                    error_corr(options)
+            print ""
+            print "*********************************************************************************"	
+            print "*********************************************************************************"
+            print "Running FasTool conversion: [%s] \n" % (right_now())
+            print "*********************************************************************************"
+            print "*********************************************************************************"	
+            print ""
+            if os.path.exists(options.out + '.paired.A.fastq'):
+                    fastool1(options)
+                    os.remove(options.out + '.paired.A.fastq')
+            else: 
+                    print >> sys.stderr,"working.."		
+            if os.path.exists(options.out + '.paired.B.fastq'):
+                    fastool2(options)
+                    os.remove(options.out + '.paired.B.fastq')
+            else: 
+                    print >> sys.stderr,"working.."		
+            if os.path.exists(options.out + '.unpaired.fastq'):
+                    fastool3(options)
+                    os.remove(options.out + '.unpaired.fastq')
+            else: 
+                    print >> sys.stderr,"working.."			
+            if os.path.exists(options.out + '.fastq'):
+                    os.remove(options.out + '.fastq')
+            else: 
+                    print >> sys.stderr,"working.."			
+            print ""
+            print "*********************************************************************************"	
+            print "*********************************************************************************"
+            print "Running Normalization Steps for Paired Reads: [%s] \n" % (right_now())
+            print "*********************************************************************************"
+            print "*********************************************************************************"	
+            print ""
+            if os.path.exists('corr.left.fa'):
+                    normalize_pairs(options)
+                    for filename in glob.glob('corr.right.fa.normalized_K25_C*_pctSD*.fa'):
+                            os.rename(filename,'norm.corr.right.fa')
+            else: 
+                    print >> sys.stderr,"working.."		
+            print ""
+            print "*********************************************************************************"	
+            print "*********************************************************************************"
+            print "Running Normalization Steps for UnPaired Reads: [%s] \n" % (right_now())
+            print "*********************************************************************************"
+            print "*********************************************************************************"	
+            print ""
+            if os.path.exists(options.out + '.unpaired.fa'):
+                    normalize_unpaired(options)
+            else: 
+                    print >> sys.stderr,"working.."		
+            print ""
+            print "*********************************************************************************"	
+            print "*********************************************************************************"
+            print "Concatenate and Clean up: [%s] \n" % (right_now())
+            print "*********************************************************************************"
+            print "*********************************************************************************"	
+            print ""
+            if os.path.exists('corr.unpaired.fa'):
+                    concatenate(options)	
+                    for filename in glob.glob('corr.left.fa.normalized_K25_C*_pctSD*.fa'):
+                            os.remove(filename) # Need to make sure if ok is something other than C40
+            else: 
+                    print >> sys.stderr,"should have concat.."	
+                    for filename in glob.glob('corr.left.fa.normalized_K25_C*_pctSD*.fa'):
+                            os.rename(filename,'norm.corr.left.fa')
+            os.remove(options.out + '.fastq.ids')
+            shutil.rmtree('normalized_reads')
+            print ""
+            print "*********************************************************************************"	
+            print "*********************************************************************************"
+            print "\nDone.. Happy Assembling! [%s] \n" % (right_now())
+            print "*********************************************************************************"
+            print "*********************************************************************************"	
+            print ""
+#########################################
+## Do this if --error_corr True
+##########################################
+        else:
+            if options.dec=='True':
+                print >> sys.stderr,"\nRunning Error Correction Module: [%s] \n" % (right_now())
+                if os.path.exists(options.out + '.paired.B.fastq'):
+                        print >> sys.stderr,"\Error Correction apprears to be complete! \n"
+                else: 
+                        error_corr(options)
+                print ""
+                print "*********************************************************************************"	
+                print "*********************************************************************************"
+                print "Running FasTool conversion: [%s] \n" % (right_now())
+                print "*********************************************************************************"
+                print "*********************************************************************************"	
+                print ""
+                if os.path.exists(options.out + '.paired.A.fastq'):
+                        fastool1(options)
+                        os.remove(options.out + '.paired.A.fastq')
+                else: 
+                        print >> sys.stderr,"working.."		
+                if os.path.exists(options.out + '.paired.B.fastq'):
+                        fastool2(options)
+                        os.remove(options.out + '.paired.B.fastq')
+                else: 
+                        print >> sys.stderr,"working.."		
+                if os.path.exists(options.out + '.unpaired.fastq'):
+                        fastool3(options)
+                        os.remove(options.out + '.unpaired.fastq')
+                else: 
+                        print >> sys.stderr,"working.."			
+                if os.path.exists(options.out + '.fastq'):
+                        os.remove(options.out + '.fastq')
+                else: 
+                        print >> sys.stderr,"working.."
+            else:
+                print >> sys.stderr,"\n\n\n*** You must specify either '--full True' if you want to error correct AND normalize, or '--error_corr True' if you want to do just error correction. \n\n\n"
 if __name__ == "__main__":
         main()
