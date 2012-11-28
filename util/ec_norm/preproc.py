@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
-#    preprocess.py
+#    preproc.py
 #    November 2012  Matthew MacManes (macmanes@gmail.com)
 #
 #   This wrapper is free software: you can redistribute it and/or modify
 #
-#  v.0.0.7
+#  v.0.1.0
 #
 #ISSUES
 #
-#clean version!
-#1st version on git
+#none that I am aware of
+#Ready for Trinity
 #
 
 import sys
@@ -50,7 +50,7 @@ def right_now():
 ##########################################
 def getOptions():
     parser = optparse.OptionParser(usage="usage: python %prog -m [int]  -p [33 or 64] -p [num threads] -c [max_cov] -l left.fq -r right.fq -u unpaired.fq]",
-                          version="%prog 0.0.7")
+                          version="%prog 0.1.0")
     parser.add_option("-m", "--memory",
                       dest="memory",
                       default="4",
