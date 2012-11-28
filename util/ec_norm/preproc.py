@@ -19,7 +19,6 @@ import optparse
 import shutil
 import os
 from datetime import datetime, date, time
-from Bio import SeqIO
 import os.path
 import glob
 
