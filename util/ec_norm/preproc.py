@@ -217,8 +217,8 @@ def normalize_single(options):
 ##########################################
 def concatenate(options):
 	destination = open('norm.corr.left.fa','wb')
-	shutil.copyfileobj(open('corr.left.fa','rb'), destination)
-	shutil.copyfileobj(open('corr.unpaired.fa','rb'), destination)
+	shutil.copyfileobj(open('corr.left.fa.normalized_K25_C20_pctSD100.fa','rb'), destination)
+	shutil.copyfileobj(open('corr.unpaired.fa.normalized_K25_C20_pctSD100.fa','rb'), destination)
 	destination.close()
 
 #########################################
@@ -289,7 +289,7 @@ def main():
             print "*********************************************************************************"
             print "*********************************************************************************"	
             print ""
-            if os.path.exists(options.out + '.unpaired.fa'):
+            if os.path.exists('corr.unpaired.fa'):
                     normalize_unpaired(options)
             else: 
                     print >> sys.stderr,"working.."		
